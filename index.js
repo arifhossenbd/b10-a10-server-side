@@ -1,7 +1,7 @@
 require('dotenv').config()
 const cors = require('cors');
 const express = require('express');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 const port = process.env.PORT || 5000;
 const app = express();
@@ -19,6 +19,58 @@ const client = new MongoClient(uri, {
   }
 });
 
+const chillGamer = client.db('chillGamerDB');
+const getCollection = (collectionName) => {
+  const collection = chillGamer.collection(collectionName);
+  return collection;
+}
+/** Reusable Crud Operation Function */
+const crudOperation = async (operation, collectionName, data = {}, filter = {}) => {
+  try {
+    const collection = getCollection(collectionName);
+
+    // If _id then convert will be ObjectId
+    // if (filter?._id) {
+    //   try {
+    //     filter?._id = new ObjectId(filter?._id);
+    //   } catch (error) {
+    //     return { success: false, message: "Invalid ObjectId format", error }
+    //   }
+    // }
+    let result;
+    switch (operation) {
+      case "create":
+        result = await collection.insertOne(data);
+        return { success: true, message: `Data inserted successfully in the ${collectionName}`, insertedId: result?.insertedId };
+      case "read":
+        result = await collection.find(filter).toArray();
+        if (!result) return { success: false, message: `This data not found in ${collectionName}` }
+        return { success: true, message: `Data retrieved successfully to the ${collectionName}`, data: result };
+      case "readOne":
+        result = await collection.findOne(filter);
+        return { success: true, message: `Data retrieved successfully by id to the ${collectionName}`, data: result };
+      /** Update full document */
+      case "update":
+        result = await collection.updateOne(filter, { $set: data });
+        if (result?.modifiedCount === 0) return { success: false, message: "Data not updated" }
+        return { success: true, message: `Data updated successfully by id to the ${collectionName}`, modifiedCount: result?.modifiedCount };
+      /** Update partial */
+      case "patch":
+        result = await collection.updateOne(filter, { $set: data });
+        if (result?.modifiedCount === 0) return { success: false, message: "Data not updated" }
+        return { success: true, message: `Data patched successfully by id to the ${collectionName}`, modifiedCount: result?.modifiedCount };
+      case "delete":
+        result = await collection.deleteOne(filter);
+        if (result?.deletedCount === 0) return { success: false, message: "Data not deleted" }
+        return { success: true, message: `Data retrieved successfully by id to the ${collectionName}`, modifiedCount: result?.modifiedCount };
+      default: return { success: false, message: "Invalid operation" }
+    }
+  } catch (error) {
+    console.error("Database error", error);
+    return { success: false, message: "Database operation failed", error };
+  }
+}
+
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
@@ -34,9 +86,9 @@ async function run() {
 run().catch(console.dir);
 
 app.get('/', (req, res) => {
-    res.send("Data is coming on the server...!")
+  res.send("Data is coming on the server...!")
 })
 
-app.listen(port, ()=> {
-    console.log(`Server is running http://localhost:${port}`)
+app.listen(port, () => {
+  console.log(`Server is running http://localhost:${port}`)
 })
