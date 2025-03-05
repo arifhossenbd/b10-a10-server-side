@@ -104,6 +104,13 @@ async function run() {
       res.status(result.success ? 200 : 400).json(result);
     })
 
+    // Update specific data by id
+    app.delete("/review/:id", async(req, res) => {
+      const filter = {_id: new ObjectId(req.params.id)};
+      const result = await crudOperation("delete", "reviewCollection", req.body, filter);
+      res.status(result.success ? 200 : 400).json(result);
+    })
+
     /** Review related CRUD Operation End */
 
     // Send a ping to confirm a successful connection
