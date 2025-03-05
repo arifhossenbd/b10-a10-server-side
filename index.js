@@ -29,14 +29,14 @@ const crudOperation = async (operation, collectionName, data = {}, filter = {}) 
   try {
     const collection = getCollection(collectionName);
 
-    // If _id then convert will be ObjectId
-    // if (filter?._id) {
-    //   try {
-    //     filter?._id = new ObjectId(filter?._id);
-    //   } catch (error) {
-    //     return { success: false, message: "Invalid ObjectId format", error }
-    //   }
-    // }
+    //If _id then convert will be ObjectId
+    if (filter && filter._id) {
+      try {
+        filter._id = new ObjectId(filter?._id);
+      } catch (error) {
+        return { success: false, message: "Invalid ObjectId format", error }
+      }
+    }
     let result;
     switch (operation) {
       case "create":
@@ -49,11 +49,13 @@ const crudOperation = async (operation, collectionName, data = {}, filter = {}) 
       case "readOne":
         result = await collection.findOne(filter);
         return { success: true, message: `Data retrieved successfully by id to the ${collectionName}`, data: result };
+
       /** Update full document */
       case "update":
         result = await collection.updateOne(filter, { $set: data });
         if (result?.modifiedCount === 0) return { success: false, message: "Data not updated" }
         return { success: true, message: `Data updated successfully by id to the ${collectionName}`, modifiedCount: result?.modifiedCount };
+
       /** Update partial */
       case "patch":
         result = await collection.updateOne(filter, { $set: data });
@@ -62,7 +64,7 @@ const crudOperation = async (operation, collectionName, data = {}, filter = {}) 
       case "delete":
         result = await collection.deleteOne(filter);
         if (result?.deletedCount === 0) return { success: false, message: "Data not deleted" }
-        return { success: true, message: `Data retrieved successfully by id to the ${collectionName}`, modifiedCount: result?.modifiedCount };
+        return { success: true, message: `Data deleted successfully by id to the ${collectionName}`, modifiedCount: result?.modifiedCount };
       default: return { success: false, message: "Invalid operation" }
     }
   } catch (error) {
@@ -92,6 +94,13 @@ async function run() {
     // Get specific data by id
     app.get("/review/:id", async(req, res) => {
       const result = await crudOperation("readOne", "reviewCollection", {_id: req.params.id});
+      res.status(result.success ? 200 : 400).json(result);
+    })
+
+    // Update specific data by id
+    app.put("/review/:id", async(req, res) => {
+      const filter = {_id: new ObjectId(req.params.id)};
+      const result = await crudOperation("update", "reviewCollection", req.body, filter);
       res.status(result.success ? 200 : 400).json(result);
     })
 
