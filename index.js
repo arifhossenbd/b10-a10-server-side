@@ -19,7 +19,7 @@ const client = new MongoClient(uri, {
   }
 });
 
-const chillGamer = client.db('chillGamerDB');
+const chillGamer = client.db('ChillGamerDB');
 const getCollection = (collectionName) => {
   const collection = chillGamer.collection(collectionName);
   return collection;
@@ -32,7 +32,7 @@ const crudOperation = async (operation, collectionName, data = {}, filter = {}) 
     //If _id then convert will be ObjectId
     if (filter && filter._id) {
       try {
-        filter._id = new ObjectId(filter?._id);
+        filter._id = new ObjectId(filter._id);
       } catch (error) {
         return { success: false, message: "Invalid ObjectId format", error }
       }
@@ -81,37 +81,43 @@ async function run() {
     /** Review related CRUD Operation Start */
     //Create a new review
     app.post("/review", async(req, res) => {
-      const result = await crudOperation("create", "reviewCollection", req.body);
+      const result = await crudOperation("create", "ReviewCollection", req.body);
       res.status(result.success ? 200 : 400).json(result);
     });
 
     // Retrieve data by use get
     app.get("/reviews", async(req, res) => {
-      const result = await crudOperation("read", "reviewCollection");
+      const result = await crudOperation("read", "ReviewCollection");
       res.status(result.success ? 200 : 400).json(result);
     })
 
     // Get specific data by id
     app.get("/review/:id", async(req, res) => {
-      const result = await crudOperation("readOne", "reviewCollection", {_id: req.params.id});
+      const result = await crudOperation("readOne", "ReviewCollection", {_id: req.params.id});
       res.status(result.success ? 200 : 400).json(result);
     })
 
     // Update specific data by id
     app.put("/review/:id", async(req, res) => {
       const filter = {_id: new ObjectId(req.params.id)};
-      const result = await crudOperation("update", "reviewCollection", req.body, filter);
+      const result = await crudOperation("update", "ReviewCollection", req.body, filter);
       res.status(result.success ? 200 : 400).json(result);
     })
 
-    // Update specific data by id
+    // Delete specific data by id
     app.delete("/review/:id", async(req, res) => {
       const filter = {_id: new ObjectId(req.params.id)};
-      const result = await crudOperation("delete", "reviewCollection", req.body, filter);
+      const result = await crudOperation("delete", "ReviewCollection", req.body, filter);
       res.status(result.success ? 200 : 400).json(result);
     })
-
     /** Review related CRUD Operation End */
+
+    /** WatchList related CRUD Operation Start */
+    app.post("/watchList", async(req, res) => {
+      const result = await crudOperation("create", "WatchListCollection", req.body);
+      res.status(result.success ? 200 : 400).json(result);
+    });
+    /** WatchList related CRUD Operation End */
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
