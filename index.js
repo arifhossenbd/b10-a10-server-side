@@ -52,7 +52,7 @@ async function run() {
       } catch (error) {
         res
           .status(500)
-          .json({ success: false, message: "Server error", error });
+          .json({ success: false, message: "Server error", error: error.message });
       }
     });
 
@@ -66,7 +66,7 @@ async function run() {
       } catch (error) {
         res
           .status(500)
-          .json({ success: false, message: "Server error", error });
+          .json({ success: false, message: "Server error", error: error.message });
       }
     });
 
@@ -84,7 +84,7 @@ async function run() {
       } catch (error) {
         res
           .status(500)
-          .json({ success: false, message: "Server error", error });
+          .json({ success: false, message: "Server error", error: error.message });
       }
     });
 
@@ -107,7 +107,7 @@ async function run() {
       } catch (error) {
         res
           .status(500)
-          .json({ success: false, message: "Server error", error });
+          .json({ success: false, message: "Server error", error: error.message });
       }
     });
 
@@ -130,7 +130,7 @@ async function run() {
       } catch (error) {
         res
           .status(500)
-          .json({ success: false, message: "Server error", error });
+          .json({ success: false, message: "Server error", error: error.message });
       }
     });
 
@@ -154,7 +154,7 @@ async function run() {
       } catch (error) {
         res
           .status(500)
-          .json({ success: false, message: "Server error", error });
+          .json({ success: false, message: "Server error", error: error.message });
       }
     });
 
@@ -178,7 +178,7 @@ async function run() {
       } catch (error) {
         res
           .status(500)
-          .json({ success: false, message: "Server error", error });
+          .json({ success: false, message: "Server error", error: error.message });
       }
     });
 
@@ -199,7 +199,7 @@ async function run() {
       } catch (error) {
         res
           .status(500)
-          .json({ success: false, message: "Server error", error });
+          .json({ success: false, message: "Server error", error: error.message });
       }
     });
     /** My Review related CRUD Operation End */
@@ -221,7 +221,7 @@ async function run() {
       } catch (error) {
         res
           .status(500)
-          .json({ success: false, message: "Server error", error });
+          .json({ success: false, message: "Server error", error: error.message });
       }
     });
 
@@ -242,7 +242,7 @@ async function run() {
       } catch (error) {
         res
           .status(500)
-          .json({ success: false, message: "Server error", error });
+          .json({ success: false, message: "Server error", error: error.message });
       }
     });
 
@@ -260,7 +260,7 @@ async function run() {
       } catch (error) {
         res
           .status(500)
-          .json({ success: false, message: "Server error", error });
+          .json({ success: false, message: "Server error", error: error.message });
       }
     });
 
@@ -281,10 +281,9 @@ async function run() {
       } catch (error) {
         res
           .status(500)
-          .json({ success: false, message: "Server error", error });
+          .json({ success: false, message: "Server error", error: error.message });
       }
     });
-
     /** My WatchList related CRUD Operation End */
 
     /** Popular related CRUD Operation Start */
@@ -306,7 +305,7 @@ async function run() {
       } catch (error) {
         res
           .status(500)
-          .json({ success: false, message: "Server error", error });
+          .json({ success: false, message: "Server error", error: error.message });
       }
     });
 
@@ -328,7 +327,7 @@ async function run() {
       } catch (error) {
         res
           .status(500)
-          .json({ success: false, message: "Server error", error });
+          .json({ success: false, message: "Server error", error: error.message });
       }
     });
     /** Popular related CRUD Operation End */
