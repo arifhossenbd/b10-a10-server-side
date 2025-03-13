@@ -31,15 +31,26 @@ const getCollection = (collectionName) => {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    // await client.connect();
+    await client.connect();
 
     /** Review related CRUD Operation Start */
     //Create a new review
     app.post("/review", async (req, res) => {
       try {
         const review = req.body;
+        // Check if review already exists
+        const reviewsData = await getCollection("ReviewCollection").findOne({
+          title: review.title,
+        });
+        const existsReview = reviewsData?.title === review?.title;
+        if (existsReview) {
+          return res
+            .status(409)
+            .json({ success: false, message: "Already exists this review" });
+        }
         // Validating the incoming data
         if (!review || Object.keys(review).length === 0) {
+          console.log(Object.keys(review));
           return res
             .status(400)
             .json({ success: false, message: "Invalid data" });
@@ -52,21 +63,41 @@ async function run() {
       } catch (error) {
         res
           .status(500)
-          .json({ success: false, message: "Server error", error: error.message });
+          .json({
+            success: false,
+            message: "Server error",
+            error: error.message,
+          });
       }
     });
 
     // Retrieve all reviews
     app.get("/reviews", async (req, res) => {
       try {
-        const reviews = await getCollection("ReviewCollection")
+        let { page, limit } = req.query;
+        page = parseInt(page) || 1;
+        limit = parseInt(limit) || 5;
+        const skip = (page - 1) * limit;
+        const collection = await getCollection("ReviewCollection");
+        const totalReviews = await collection.countDocuments();
+        const reviews = await collection
           .find()
+          .skip(skip)
+          .limit(limit)
           .toArray();
-        res.status(200).json(reviews);
+        res.status(200).json({
+          data: reviews,
+          currentPage: page,
+          totalPage: Math.ceil(totalReviews / limit),
+        });
       } catch (error) {
         res
           .status(500)
-          .json({ success: false, message: "Server error", error: error.message });
+          .json({
+            success: false,
+            message: "Server error",
+            error: error.message,
+          });
       }
     });
 
@@ -84,30 +115,38 @@ async function run() {
       } catch (error) {
         res
           .status(500)
-          .json({ success: false, message: "Server error", error: error.message });
+          .json({
+            success: false,
+            message: "Server error",
+            error: error.message,
+          });
       }
     });
 
-    // Get the highest rated games
-    app.get("/highRatedGames", async (req, res) => {
+    // Get the latest games
+    app.get("/latestGames", async (req, res) => {
       try {
         const limit = parseInt(req.query.limit) || 5; // Default to 5 if limit is not provide
         const games = await getCollection("ReviewCollection")
-          .find({ rating: { $in: ["9", "10"] } }) // Filter rating that are either "9" or "10"
-          .sort({ rating: -1 }) // Sort by rating in descending order
+          .find({ publishingYear: { $gt: "2024" } }) // Filter Games published in 2024+
+          .sort({ publishingYear: -1 }) // Sort by publishing year in descending order
           .limit(limit) // Limit the number of results
           .toArray();
         if (!games.length) {
           return res.status(404).json({
             success: false,
-            message: "No reviews found with rating between 9 and 10",
+            message: "No reviews found with publishing year between 2024+",
           });
         }
         res.status(200).json(games);
       } catch (error) {
         res
           .status(500)
-          .json({ success: false, message: "Server error", error: error.message });
+          .json({
+            success: false,
+            message: "Server error",
+            error: error.message,
+          });
       }
     });
 
@@ -115,22 +154,53 @@ async function run() {
     app.get("/latestReviews", async (req, res) => {
       try {
         const limit = parseInt(req.query.limit) || 5; // Default to 5 if limit is not provide
-        const games = await getCollection("ReviewCollection")
-          .find({ publishingYear: { $in: ["2024", "2025"] } }) // Filter reviews published in "2024" or "2025"
-          .sort({ publishingYear: -1 }) // Sort by publishing year in descending order
+        const reviews = await getCollection("ReviewCollection")
+          .find()
+          .sort({ timeStamp: -1 }) // Sort by latest reviews in descending order
           .limit(limit) // Limit the number of results
           .toArray();
-        if (!games.length) {
+        if (!reviews.length) {
           return res.status(404).json({
             success: false,
-            message: "No reviews found with rating between 9 and 10",
+            message: "No reviews found",
           });
         }
-        res.status(200).json(games);
+        res.status(200).json(reviews);
       } catch (error) {
         res
           .status(500)
-          .json({ success: false, message: "Server error", error: error.message });
+          .json({
+            success: false,
+            message: "Server error",
+            error: error.message,
+          });
+      }
+    });
+
+    // Get the top reviews
+    app.get("/topRatedReviews", async (req, res) => {
+      try {
+        const limit = parseInt(req.query.limit) || 5; // Default to 5 if limit is not provide
+        const reviews = await getCollection("ReviewCollection")
+          .find({ rating: { $in: ["9", "10"] } }) // Filter reviews rating between 9 to 10;
+          .sort({ rating: -1 }) // Sort by latest reviews in descending order
+          .limit(limit) // Limit the number of results
+          .toArray();
+        if (!reviews.length) {
+          return res.status(404).json({
+            success: false,
+            message: "No reviews found",
+          });
+        }
+        res.status(200).json(reviews);
+      } catch (error) {
+        res
+          .status(500)
+          .json({
+            success: false,
+            message: "Server error",
+            error: error.message,
+          });
       }
     });
 
@@ -154,7 +224,11 @@ async function run() {
       } catch (error) {
         res
           .status(500)
-          .json({ success: false, message: "Server error", error: error.message });
+          .json({
+            success: false,
+            message: "Server error",
+            error: error.message,
+          });
       }
     });
 
@@ -178,7 +252,11 @@ async function run() {
       } catch (error) {
         res
           .status(500)
-          .json({ success: false, message: "Server error", error: error.message });
+          .json({
+            success: false,
+            message: "Server error",
+            error: error.message,
+          });
       }
     });
 
@@ -199,7 +277,11 @@ async function run() {
       } catch (error) {
         res
           .status(500)
-          .json({ success: false, message: "Server error", error: error.message });
+          .json({
+            success: false,
+            message: "Server error",
+            error: error.message,
+          });
       }
     });
     /** My Review related CRUD Operation End */
@@ -221,7 +303,11 @@ async function run() {
       } catch (error) {
         res
           .status(500)
-          .json({ success: false, message: "Server error", error: error.message });
+          .json({
+            success: false,
+            message: "Server error",
+            error: error.message,
+          });
       }
     });
 
@@ -242,7 +328,11 @@ async function run() {
       } catch (error) {
         res
           .status(500)
-          .json({ success: false, message: "Server error", error: error.message });
+          .json({
+            success: false,
+            message: "Server error",
+            error: error.message,
+          });
       }
     });
 
@@ -260,7 +350,11 @@ async function run() {
       } catch (error) {
         res
           .status(500)
-          .json({ success: false, message: "Server error", error: error.message });
+          .json({
+            success: false,
+            message: "Server error",
+            error: error.message,
+          });
       }
     });
 
@@ -281,7 +375,11 @@ async function run() {
       } catch (error) {
         res
           .status(500)
-          .json({ success: false, message: "Server error", error: error.message });
+          .json({
+            success: false,
+            message: "Server error",
+            error: error.message,
+          });
       }
     });
     /** My WatchList related CRUD Operation End */
@@ -305,7 +403,11 @@ async function run() {
       } catch (error) {
         res
           .status(500)
-          .json({ success: false, message: "Server error", error: error.message });
+          .json({
+            success: false,
+            message: "Server error",
+            error: error.message,
+          });
       }
     });
 
@@ -327,7 +429,11 @@ async function run() {
       } catch (error) {
         res
           .status(500)
-          .json({ success: false, message: "Server error", error: error.message });
+          .json({
+            success: false,
+            message: "Server error",
+            error: error.message,
+          });
       }
     });
     /** Popular related CRUD Operation End */
