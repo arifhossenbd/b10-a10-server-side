@@ -126,16 +126,18 @@ async function run() {
     // Get the latest games
     app.get("/latestGames", async (req, res) => {
       try {
+        const date = new Date();
+        const year = date.getFullYear();
         const limit = parseInt(req.query.limit) || 5; // Default to 5 if limit is not provide
         const games = await getCollection("ReviewCollection")
-          .find({ publishingYear: { $gt: "2024" } }) // Filter Games published in 2024+
+          .find({ publishingYear: { $in: [`${year}`, `${year + 1}`] } }) // Filter Games published in 2025+
           .sort({ publishingYear: -1 }) // Sort by publishing year in descending order
           .limit(limit) // Limit the number of results
           .toArray();
         if (!games.length) {
           return res.status(404).json({
             success: false,
-            message: "No reviews found with publishing year between 2024+",
+            message: "No reviews found with publishing year between 2025 to 2025+",
           });
         }
         res.status(200).json(games);
@@ -162,7 +164,7 @@ async function run() {
         if (!reviews.length) {
           return res.status(404).json({
             success: false,
-            message: "No reviews found",
+            message: "Latest reviews not found.",
           });
         }
         res.status(200).json(reviews);
@@ -182,14 +184,14 @@ async function run() {
       try {
         const limit = parseInt(req.query.limit) || 5; // Default to 5 if limit is not provide
         const reviews = await getCollection("ReviewCollection")
-          .find({ rating: { $in: ["9", "10"] } }) // Filter reviews rating between 9 to 10;
+          .find({ rating: { $in: ["10"] } }) // Filter reviews rating 10;
           .sort({ rating: -1 }) // Sort by latest reviews in descending order
           .limit(limit) // Limit the number of results
           .toArray();
         if (!reviews.length) {
           return res.status(404).json({
             success: false,
-            message: "No reviews found",
+            message: "Top rated reviews not found",
           });
         }
         res.status(200).json(reviews);
