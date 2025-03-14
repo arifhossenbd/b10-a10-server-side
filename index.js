@@ -2,66 +2,44 @@ require("dotenv").config();
 const cors = require("cors");
 const express = require("express");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
-
-const port = process.env.PORT || 5000;
 const app = express();
+const port = process.env.PORT || 3000;
+
 app.use(cors());
 app.use(express.json());
 
 const uri = process.env.MONGODB_URI;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
-let client;
-let db;
+const client = new MongoClient(uri, {
+  serverApi: {
+    version: ServerApiVersion.v1,
+    strict: true,
+    deprecationErrors: true,
+  },
+});
 
-async function connectionToDatabase() {
-  if (client && client.topology && client.topology.isConnected()) {
-    return db;
-  }
-
-  client = new MongoClient(uri, {
-    serverApi: {
-      version: ServerApiVersion.v1,
-      strict: true,
-      deprecationErrors: true,
-    },
-  });
-
+async function connectDB() {
   try {
     await client.connect();
-    db = client.db("ChillGamerDB");
-    console.log("Connected to MongoDB");
-    return db;
-  } catch (error) {
-    console.error("Couldn't connect to MongoDB", error);
-    throw error;
-  }
-}
-
-// Helper function to get a collection by name
-const getCollection = async (collectionName) => {
-  const db = await connectionToDatabase();
-  const collection = await db.collection(collectionName);
-  return collection;
-};
-
-async function run() {
-  try {
-    // Connect the client to the server	(optional starting in v4.7)
-    await connectionToDatabase();
-
+    console.log("Connected to MongoDB successfully!");
+    const reviewCollection = client
+      .db("ChillGamerDB")
+      .collection("ReviewCollection");
+    const watchListCollection = client
+      .db("ChillGamerDB")
+      .collection("WatchListCollection");
     /** Review related CRUD Operation Start */
     //Create a new review
     app.post("/review", async (req, res) => {
       try {
         const review = req.body;
-        const collection = await getCollection("ReviewCollection");
         // Check if review already exists
-        const reviewTitle = await collection.findOne({
+        const reviewTitle = await reviewCollection.findOne({
           title: review.title,
+          reviewerEmail: review.reviewerEmail,
         });
-        const existsReview = reviewTitle?.title === review?.title;
-        if (existsReview) {
+        if (reviewTitle) {
           return res
             .status(409)
             .json({ success: false, message: "Already exists this review" });
@@ -74,9 +52,7 @@ async function run() {
             .json({ success: false, message: "Invalid data" });
         }
         // Insert the new review into the "ReviewCollection"
-        const result = await getCollection("ReviewCollection").insertOne(
-          review
-        );
+        const result = await reviewCollection.insertOne(review);
         res.status(201).json({ success: true, insertedId: result.insertedId });
       } catch (error) {
         res.status(500).json({
@@ -91,13 +67,16 @@ async function run() {
     app.get("/reviews", async (req, res) => {
       try {
         let { page, limit } = req.query;
-        page = parseInt(page) || 1;
-        limit = parseInt(limit) || 6;
+        page = Math.max(parseInt(page) || 1, 1);
+        limit = Math.max(parseInt(limit) || 6, 1);
         const skip = (page - 1) * limit;
 
-        const collection = await getCollection("ReviewCollection");
-        const totalReviews = await collection.countDocuments();
-        const reviews = await collection.find().skip(skip).limit(limit).toArray();
+        const totalReviews = await reviewCollection.countDocuments();
+        const reviews = await reviewCollection
+          .find()
+          .skip(skip)
+          .limit(limit)
+          .toArray();
         res.status(200).json({
           data: reviews,
           currentPage: page,
@@ -116,8 +95,7 @@ async function run() {
     app.get("/review/:id", async (req, res) => {
       try {
         const id = { _id: new ObjectId(req.params.id) };
-        const collection = await getCollection("ReviewCollection");
-        const review = await collection.findOne(id);
+        const review = await reviewCollection.findOne(id);
         if (!review) {
           return res
             .status(404)
@@ -140,9 +118,8 @@ async function run() {
         const currentYear = date.getFullYear();
         const limit = parseInt(req.query.limit) || 6; // Default to 6 if limit is not provide
 
-        const collection = await getCollection("ReviewCollection");
         // Fetch games from the current or previous year
-        const games = await collection
+        const games = await reviewCollection
           .find({
             $or: [
               { publishingYear: `${currentYear}` }, // Current year
@@ -173,9 +150,8 @@ async function run() {
     // Get the latest reviews
     app.get("/latestReviews", async (req, res) => {
       try {
-        const collection = await getCollection("ReviewCollection");
         const limit = parseInt(req.query.limit) || 6; // Default to 6 if limit is not provide
-        const reviews = await collection
+        const reviews = await reviewCollection
           .find()
           .sort({ timeStamp: -1 }) // Sort by latest reviews in descending order
           .limit(limit) // Limit the number of results
@@ -199,9 +175,8 @@ async function run() {
     // Get the top reviews
     app.get("/topRatedReviews", async (req, res) => {
       try {
-        const collection = await getCollection("ReviewCollection");
         const limit = parseInt(req.query.limit) || 6; // Default to 6 if limit is not provide
-        const reviews = await collection
+        const reviews = await reviewCollection
           .find({ rating: { $in: ["10"] } }) // Filter reviews rating 10;
           .sort({ rating: -1 }) // Sort by latest reviews in descending order
           .limit(limit) // Limit the number of results
@@ -235,9 +210,16 @@ async function run() {
             message: "Email query parameter is required",
           });
         }
-        const collection = await getCollection("ReviewCollection");
-        const reviews = await collection
+        let { page, limit } = req.query;
+        page = Math.max(parseInt(page) || 1, 1);
+        limit = Math.max(parseInt(limit) || 6, 1);
+        const skip = (page - 1) * limit;
+
+        const totalReviews = await reviewCollection.countDocuments();
+        const reviews = await reviewCollection
           .find({ reviewerEmail: email })
+          .skip(skip)
+          .limit(limit)
           .toArray();
         if (!reviews.length) {
           return res.status(404).json({
@@ -245,7 +227,11 @@ async function run() {
             message: "No reviews found for this email",
           });
         }
-        res.status(200).json(reviews);
+        res.status(200).json({
+          data: reviews,
+          currentPage: page,
+          totalPage: Math.ceil(totalReviews / limit),
+        });
       } catch (error) {
         res.status(500).json({
           success: false,
@@ -260,8 +246,7 @@ async function run() {
       try {
         const id = { _id: new ObjectId(req.params.id) };
         const updateData = req.body;
-        const collection = await getCollection("ReviewCollection");
-        const result = await collection.updateOne(id, {
+        const result = await reviewCollection.updateOne(id, {
           $set: updateData,
         });
         if (result.modifiedCount === 0) {
@@ -286,8 +271,7 @@ async function run() {
     app.delete("/myReview/:id", async (req, res) => {
       try {
         const id = { _id: new ObjectId(req.params.id) };
-        const collection = await getCollection("ReviewCollection");
-        const result = await collection.deleteOne(id);
+        const result = await reviewCollection.deleteOne(id);
         if (result.deletedCount === 0) {
           return res
             .status(404)
@@ -312,12 +296,10 @@ async function run() {
     app.post("/watchList", async (req, res) => {
       try {
         const review = req.body;
-        const collection = await getCollection("WatchListCollection");
         // Check if review already exists
-        const id = await collection.findOne({
-          _id: review._id,
+        const existsReview = await watchListCollection.findOne({
+          _id: new ObjectId(review.watchId),
         });
-        const existsReview = id?._id === review?.watchId;
         if (existsReview) {
           return res.status(409).json({
             success: false,
@@ -329,9 +311,7 @@ async function run() {
             .status(400)
             .json({ success: false, message: "Invalid data" });
         }
-        const result = await collection.insertOne(
-          review
-        );
+        const result = await watchListCollection.insertOne(review);
         res.status(201).json({ success: true, insertedId: result.insertedId });
       } catch (error) {
         res.status(500).json({
@@ -352,9 +332,16 @@ async function run() {
             message: "Email query parameter is required",
           });
         }
-        const watchCollection = await getCollection("WatchListCollection");
-        const reviews = await watchCollection
+        let { page, limit } = req.query;
+        page = Math.max(parseInt(page) || 1, 1);
+        limit = Math.max(parseInt(limit) || 6, 1);
+        const skip = (page - 1) * limit;
+
+        const totalReviews = await watchListCollection.countDocuments();
+        const reviews = await watchListCollection
           .find({ visitor: email })
+          .skip(skip)
+          .limit(limit)
           .toArray();
         if (!reviews.length) {
           return res.status(404).json({
@@ -362,7 +349,11 @@ async function run() {
             message: "No reviews found for this email",
           });
         }
-        res.status(200).json(reviews);
+        res.status(200).json({
+          data: reviews,
+          currentPage: page,
+          totalPage: Math.ceil(totalReviews / limit),
+        });
       } catch (error) {
         res.status(500).json({
           success: false,
@@ -376,8 +367,7 @@ async function run() {
     app.get("/myWatchList/:id", async (req, res) => {
       try {
         const id = { _id: new ObjectId(req.params.id) };
-        const watchCollection = await getCollection("WatchListCollection");
-        const review = await watchCollection.findOne(id);
+        const review = await watchListCollection.findOne(id);
         if (!review) {
           return res
             .status(404)
@@ -396,9 +386,8 @@ async function run() {
     // Delete a single wathlist item by ID
     app.delete("/myWatchList/:id", async (req, res) => {
       try {
-        const id = { _id: new ObjectId(req.params.id) };
-        const watchCollection = await getCollection("WatchListCollection");
-        const result = await watchCollection.deleteOne(id);
+        const id = new ObjectId(req.params.id);
+        const result = await watchListCollection.deleteOne({ _id: id });
         if (result.deletedCount === 0) {
           return res
             .status(404)
@@ -421,11 +410,13 @@ async function run() {
     /** Popular related CRUD Operation Start */
     app.put("/incrementClickCount/:id", async (req, res) => {
       try {
-        const id = { _id: new ObjectId(req.params.id) }; 
-        const collection = await getCollection("ReviewCollection");
-        const result = await collection.updateOne(id, {
-          $inc: { clickCount: 1 }, // Increment the clickCount by 1
-        });
+        const id = new ObjectId(req.params.id);
+        const result = await reviewCollection.updateOne(
+          { _id: id },
+          {
+            $inc: { clickCount: 1 }, // Increment the clickCount by 1
+          }
+        );
         if (result.modifiedCount === 0) {
           return res.status(404).json({
             success: false,
@@ -446,9 +437,8 @@ async function run() {
 
     app.get("/popularReviews", async (req, res) => {
       try {
-        const collection = await getCollection("ReviewCollection");
         const limit = parseInt(req.query.limit) || 5; // Default to 5 if limit is not provided
-        const reviews = await collection
+        const reviews = await reviewCollection
           .find({ clickCount: { $gt: 0 } }) // Filter items with clickCount greater than 0
           .sort({ clickCount: -1 }) // Sort by clickCount in descending order
           .limit(limit) // Limit the number of results
@@ -469,23 +459,16 @@ async function run() {
       }
     });
     /** Popular related CRUD Operation End */
-
-    // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
-    );
-  } finally {
-    // Ensures that the client will close when you finish/error
-    // await client.close();
+  } catch (error) {
+    console.error("MongoDB connection failed!", error);
   }
 }
-run().catch(console.dir);
+
+connectDB();
 
 app.get("/", (req, res) => {
-  res.send("Data is coming on the server...!");
+  res.send("Chill Gamer project is running...");
 });
-
 app.listen(port, () => {
-  console.log(`Server is running http://localhost:${port}`);
+  console.log("Server is running on:", port);
 });

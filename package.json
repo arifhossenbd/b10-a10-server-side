@@ -3,11 +3,21 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
+    "build": "node index.js",
+    "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/arifhossenbd/b10-a10-server-side.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/arifhossenbd/b10-a10-server-side/issues"
+  },
+  "homepage": "https://github.com/arifhossenbd/b10-a10-server-side#readme",
   "description": "",
   "dependencies": {
     "cors": "^2.8.5",
