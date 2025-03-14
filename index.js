@@ -8,8 +8,9 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-const uri = process.env.MONGODB_URI;
+// const uri = process.env.MONGODB_URI;
 
+const uri = "mongodb+srv://chill-gamer:chill-gamer@cluster0.6rpgfkx.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
   serverApi: {
@@ -67,8 +68,8 @@ async function connectDB() {
     app.get("/reviews", async (req, res) => {
       try {
         let { page, limit } = req.query;
-        page = Math.max(parseInt(page) || 1, 1);
-        limit = Math.max(parseInt(limit) || 6, 1);
+        page = parseInt(page) || 1;
+        limit = parseInt(limit) || 6;
         const skip = (page - 1) * limit;
 
         const totalReviews = await reviewCollection.countDocuments();
@@ -211,8 +212,8 @@ async function connectDB() {
           });
         }
         let { page, limit } = req.query;
-        page = Math.max(parseInt(page) || 1, 1);
-        limit = Math.max(parseInt(limit) || 6, 1);
+        page = parseInt(page) || 1;
+        limit = parseInt(limit) || 6;
         const skip = (page - 1) * limit;
 
         const totalReviews = await reviewCollection.countDocuments();
@@ -333,8 +334,8 @@ async function connectDB() {
           });
         }
         let { page, limit } = req.query;
-        page = Math.max(parseInt(page) || 1, 1);
-        limit = Math.max(parseInt(limit) || 6, 1);
+        page = parseInt(page) || 1;
+        limit = parseInt(limit) || 6;
         const skip = (page - 1) * limit;
 
         const totalReviews = await watchListCollection.countDocuments();
