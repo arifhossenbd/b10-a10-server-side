@@ -1,28 +1,9 @@
 {
-  "name": "b10-a10-server-side",
-  "version": "1.0.0",
-  "main": "index.js",
-  "scripts": {
-    "build": "node index.js",
-    "start": "node index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/arifhossenbd/b10-a10-server-side.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/arifhossenbd/b10-a10-server-side/issues"
-  },
-  "homepage": "https://github.com/arifhossenbd/b10-a10-server-side#readme",
-  "description": "",
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
-    "mongodb": "6.13"
+    "mongodb": "^6.14.2",
+    "whatwg-url": "^14.1.1"
   }
 }

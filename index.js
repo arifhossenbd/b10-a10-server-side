@@ -2,15 +2,13 @@ require("dotenv").config();
 const cors = require("cors");
 const express = require("express");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const uri = process.env.MONGODB_URI;
 const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
 
-// const uri = process.env.MONGODB_URI;
-
-const uri = "mongodb+srv://chill-gamer:chill-gamer@cluster0.6rpgfkx.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
   serverApi: {
@@ -472,4 +470,10 @@ app.get("/", (req, res) => {
 });
 app.listen(port, () => {
   console.log("Server is running on:", port);
+});
+
+process.on("SIGINT", async () => {
+  await client.close();
+  console.log("MongoDB connection closed.");
+  process.exit(0);
 });
