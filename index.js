@@ -5,6 +5,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const uri = process.env.MONGODB_URI;
 const app = express();
 const port = process.env.PORT || 3000;
+console.log(uri)
 
 app.use(cors());
 app.use(express.json());
@@ -20,7 +21,7 @@ const client = new MongoClient(uri, {
 
 async function connectDB() {
   try {
-    await client.connect();
+    // await client.connect();
     console.log("Connected to MongoDB successfully!");
     const reviewCollection = client
       .db("ChillGamerDB")
@@ -469,11 +470,5 @@ app.get("/", (req, res) => {
   res.send("Chill Gamer project is running...");
 });
 app.listen(port, () => {
-  console.log("Server is running on:", port);
-});
-
-process.on("SIGINT", async () => {
-  await client.close();
-  console.log("MongoDB connection closed.");
-  process.exit(0);
+  console.log(`Server is running on: http://localhost:${port}`);
 });
